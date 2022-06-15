@@ -214,6 +214,7 @@ vp_set_source_file_compile_flag(src/wireframe-simulator/vpCoreDisplay.cpp -Wno-s
 vp_set_source_file_compile_flag(src/wireframe-simulator/vpLex.cpp -Wno-strict-overflow)
 vp_set_source_file_compile_flag(src/wireframe-simulator/vpBound.cpp -Wno-strict-overflow)
 vp_set_source_file_compile_flag(src/wireframe-simulator/vpArit.cpp -Wno-strict-overflow)
+vp_set_source_file_compile_flag(src/real-robot/tello/vpRobotTello.cpp -Wno-strict-overflow)
 
 # copy robot and wireframe simulator data
 vp_glob_module_copy_data("src/robot-simulator/arms/*.bnd"      data/robot-simulator)
@@ -224,7 +225,7 @@ vp_module_include_directories(${opt_incs})
 vp_create_module(${opt_libs})
 vp_add_tests(
   DEPENDS_ON visp_sensor visp_vision visp_blob visp_gui
-  CTEST_EXCLUDE_PATH qbdevice servo-franka virtuose bebop2
+  CTEST_EXCLUDE_PATH qbdevice servo-franka virtuose bebop2 tello
   CTEST_EXCLUDE_FILE servo-afma6/testRobotAfma6Pose.cpp servo-viper/testRobotViper850Pose.cpp servo-flir-ptu/testRobotFlirPtu.cpp)
 
 if(USE_VIRTUOSE)
