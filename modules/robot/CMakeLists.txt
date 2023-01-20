@@ -1,4 +1,4 @@
-#############################################################################
+# ############################################################################
 #
 # ViSP, open source Visual Servoing Platform software.
 # Copyright (C) 2005 - 2019 by Inria. All rights reserved.
@@ -34,7 +34,7 @@
 # Authors:
 # Fabien Spindler
 #
-#############################################################################
+# ############################################################################
 
 # Add optional 3rd parties
 set(opt_incs "")
@@ -58,13 +58,15 @@ if(USE_VIRTUOSE)
     list(APPEND opt_libs ${RT_LIBRARIES})
     list(APPEND opt_libs ${DL_LIBRARIES})
   endif()
+
   if(MSVC)
-    # Work arround to remove warning LNK4099; PDB vc120.pdb not found with virtuoseDLL.lib
+    # Work around to remove warning LNK4099; PDB vc120.pdb not found with virtuoseDLL.lib
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
+
     # Disable Visual C++ C4312 warning occuring on 3rd party VirtuoseAPI.h file
     # VirtuoseAPI.h(280): warning C4312: 'type cast': conversion from 'int' to 'char *' of greater size
     # VirtuoseAPI.h(302): warning C4312: 'type cast': conversion from 'int' to 'VirtContext' of greater size
-  if(BUILD_SHARED_LIBS)
+    if(BUILD_SHARED_LIBS)
       vp_set_source_file_compile_flag(src/haptic-device/virtuose/vpVirtuose.cpp /wd4312)
       vp_set_source_file_compile_flag(test/virtuose/testVirtuose.cpp /wd4312)
       vp_set_source_file_compile_flag(test/virtuose/testVirtuoseAfma6.cpp /wd4312)
@@ -72,9 +74,9 @@ if(USE_VIRTUOSE)
       vp_set_source_file_compile_flag(test/virtuose/testVirtuoseJointLimits.cpp /wd4312)
       vp_set_source_file_compile_flag(test/virtuose/testVirtuosePeriodicFunction.cpp /wd4312)
       vp_set_source_file_compile_flag(test/virtuose/testVirtuoseWithGlove.cpp /wd4312)
-  else()
-    vp_warnings_disable(CMAKE_CXX_FLAGS /wd4312)
-  endif()
+    else()
+      vp_warnings_disable(CMAKE_CXX_FLAGS /wd4312)
+    endif()
   endif()
 endif()
 
@@ -86,6 +88,18 @@ if(USE_AFMA4 OR USE_AFMA6 OR USE_VIPER650 OR USE_VIPER850)
   list(APPEND opt_libs ${CALINUX_LIBRARIES})
   list(APPEND opt_libs ${RAW1394_LIBRARIES})
   list(APPEND opt_libs ${RT_LIBRARIES})
+endif()
+
+if(USE_UR_RTDE)
+  vp_get_external_target(ur_rtde::rtde UR_RTDE_INCLUDE_DIRS UR_RTDE_LIBRARIES)
+  list(APPEND opt_incs ${UR_RTDE_INCLUDE_DIRS})
+  list(APPEND opt_libs ${UR_RTDE_LIBRARIES})
+endif()
+
+if(USE_MAVSDK)
+  vp_get_external_target(MAVSDK::mavsdk MAVSDK_INCLUDE_DIRS MAVSDK_LIBRARIES)
+  list(APPEND opt_incs ${MAVSDK_INCLUDE_DIRS})
+  list(APPEND opt_libs ${MAVSDK_LIBRARIES})
 endif()
 
 if(USE_BICLOPS)
@@ -122,25 +136,15 @@ elseif(USE_ARIA AND NOT UNIX)
 endif()
 
 if(USE_FRANKA)
-  get_target_property(Franka_inc_dirs_ ${Franka_LIBRARIES} INTERFACE_INCLUDE_DIRECTORIES)
-  list(APPEND opt_incs ${Franka_inc_dirs_})
-  message("Franka_inc_dirs_: ${Franka_inc_dirs_}")
-
-  set(config_ "release" "debug" "releasewithdebinfo" "relwithdebinfo" "none" "noconfig")
-  foreach(imp_config_ ${config_})
-    string(TOUPPER "${imp_config_}" imp_config_up_)
-    get_target_property(Franka_lib ${Franka_LIBRARIES} IMPORTED_LOCATION_${imp_config_up_})
-    message("Franka_lib: ${Franka_lib}")
-    if(Franka_lib)
-       list(APPEND opt_libs ${Franka_lib})
-       break()
-    endif()
-  endforeach()
+  vp_get_external_target(${Franka_LIBRARIES} FRANKA_INCLUDE_DIRS FRANKA_LIBRARIES)
+  list(APPEND opt_incs ${FRANKA_INCLUDE_DIRS})
+  list(APPEND opt_libs ${FRANKA_LIBRARIES})
 endif()
 
 if(USE_ARSDK)
   list(APPEND opt_incs ${ARSDK_INCLUDE_DIRS})
   list(APPEND opt_libs ${ARSDK_LIBRARIES})
+
   if(USE_FFMPEG)
     list(APPEND opt_incs ${FFMPEG_INCLUDE_DIRS})
     list(APPEND opt_libs ${FFMPEG_LIBRARIES})
@@ -152,15 +156,19 @@ if(USE_COIN3D)
   if(WIN32)
     add_definitions("-DCOIN_DLL")
   endif()
+
   list(APPEND opt_incs ${COIN3D_INCLUDE_DIRS})
+
   # On OSX cmake 2.8 found OpenGL but OPENGL_INCLUDE_DIR was set to NOT_FOUND
   # We add a test to be sure that the OPENGL vars exist.
   if(OPENGL_INCLUDE_DIR)
     list(APPEND opt_incs ${OPENGL_INCLUDE_DIR})
   endif()
+
   if(OPENGL_LIBRARIES)
     list(APPEND opt_libs ${OPENGL_LIBRARIES})
   endif()
+
   list(APPEND opt_libs ${COIN3D_LIBRARIES})
 endif()
 
@@ -207,6 +215,10 @@ else()
   vp_set_source_file_compile_flag(src/wireframe-simulator/vpWireFrameSimulator.cpp -Wno-strict-overflow)
 endif()
 
+if(USE_UR_RTDE)
+  vp_set_source_file_compile_flag(src/real-robot/universal-robots/vpRobotUniversalRobots.cpp -Wno-unused-parameter)
+endif()
+
 vp_set_source_file_compile_flag(src/light/vpRingLight.cpp -Wno-strict-overflow)
 vp_set_source_file_compile_flag(src/wireframe-simulator/vpClipping.cpp -Wno-strict-overflow)
 vp_set_source_file_compile_flag(src/wireframe-simulator/vpBoundio.cpp -Wno-strict-overflow)
@@ -217,7 +229,7 @@ vp_set_source_file_compile_flag(src/wireframe-simulator/vpArit.cpp -Wno-strict-o
 vp_set_source_file_compile_flag(src/real-robot/tello/vpRobotTello.cpp -Wno-strict-overflow)
 
 # copy robot and wireframe simulator data
-vp_glob_module_copy_data("src/robot-simulator/arms/*.bnd"      data/robot-simulator)
+vp_glob_module_copy_data("src/robot-simulator/arms/*.bnd" data/robot-simulator)
 vp_glob_module_copy_data("src/wireframe-simulator/scene/*.bnd" data/wireframe-simulator)
 vp_glob_module_copy_data("src/wireframe-simulator/scene/*.sld" data/wireframe-simulator)
 
@@ -227,6 +239,7 @@ vp_add_tests(
   DEPENDS_ON visp_sensor visp_vision visp_blob visp_gui
   CTEST_EXCLUDE_PATH qbdevice servo-franka virtuose bebop2 tello
   CTEST_EXCLUDE_FILE servo-afma6/testRobotAfma6Pose.cpp servo-viper/testRobotViper850Pose.cpp servo-flir-ptu/testRobotFlirPtu.cpp)
+  CTEST_EXCLUDE_PATH bebop2 qbdevice servo-afma4 servo-afma6 servo-franka servo-universal-robots servo-viper virtuose servo-pixhawk)
 
 if(USE_VIRTUOSE)
   # Add specific build flag to turn off warnings coming from VirtuoseAPI 3rd party
@@ -242,10 +255,19 @@ endif()
 if(USE_ARSDK)
   vp_set_source_file_compile_flag(src/real-robot/bebop2/vpRobotBebop2.cpp -Wno-old-style-cast -Wno-implicit-fallthrough -Wno-cast-qual -Wno-deprecated-declarations)
 endif()
+
 if(USE_FRANKA)
   vp_set_source_file_compile_flag(src/real-robot/franka/vpForceTorqueGenerator_impl.cpp -Wno-shadow -Wno-deprecated-copy)
 endif()
 
 if(USE_FLIRPTUSDK)
   vp_set_source_file_compile_flag(test/servo-flir-ptu/testRobotFlirPtu.cpp -Wno-unused-result)
+endif()
+
+if(USE_UR_RTDE)
+  vp_set_source_file_compile_flag(test/servo-universal-robots/testUniversalRobotsCartPosition.cpp -Wno-unused-parameter)
+  vp_set_source_file_compile_flag(test/servo-universal-robots/testUniversalRobotsCartVelocity.cpp -Wno-unused-parameter)
+  vp_set_source_file_compile_flag(test/servo-universal-robots/testUniversalRobotsGetData.cpp -Wno-unused-parameter)
+  vp_set_source_file_compile_flag(test/servo-universal-robots/testUniversalRobotsJointPosition.cpp -Wno-unused-parameter)
+  vp_set_source_file_compile_flag(test/servo-universal-robots/testUniversalRobotsJointVelocity.cpp -Wno-unused-parameter)
 endif()

@@ -593,7 +593,7 @@ macro(vp_target_include_modules target)
     if(d MATCHES "^visp_" AND HAVE_${d})
       if (EXISTS "${VISP_MODULE_${d}_LOCATION}/include")
         vp_target_include_directories(${target} "${VISP_MODULE_${d}_LOCATION}/include")
-        # Work arround to be able to build the modules without INTERFACE_INCLUDE_DIRECTORIES
+        # Work around to be able to build the modules without INTERFACE_INCLUDE_DIRECTORIES
         # that was only introduces since CMake 2.8.12
         if (CMAKE_VERSION VERSION_LESS 2.8.12)
           vp_target_include_directories(${target} "${VISP_MODULE_${d}_INC_DEPS}")
@@ -968,7 +968,7 @@ macro(vp_add_tests)
   if(BUILD_TESTS AND EXISTS "${test_path}")
     __vp_parse_test_sources(TEST ${ARGN})
 
-    vp_find_dataset(VISP_DATASET_FOUND)
+    vp_find_dataset(VISP_DATASET_FOUND VISP_DATASET_LOCATION)
 
     set(__exclude_ctest "")
     foreach(__folder ${VISP_TEST_${the_module}_CTEST_EXCLUDE_FOLDER} )
@@ -991,7 +991,7 @@ macro(vp_add_tests)
     foreach(d ${VISP_TEST_${the_module}_DEPS})
       list(APPEND test_deps ${d})
       list(APPEND test_deps ${VISP_MODULE_${d}_DEPS})
-      # Work arround to be able to build the modules without INTERFACE_INCLUDE_DIRECTORIES
+      # Work around to be able to build the modules without INTERFACE_INCLUDE_DIRECTORIES
       # that was only introduces since CMake 2.8.12
       if(CMAKE_VERSION VERSION_LESS 2.8.12)
         list(APPEND test_deps "${VISP_MODULE_${__m}_INC_DEPS}")

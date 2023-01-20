@@ -1051,7 +1051,7 @@ double vpRobotViper650::getPositioningVelocity(void) const { return m_positionin
     from the base to the end-effector.
 
   - In the camera and the reference frame, positions are respectively
-  X,Y,Z translations and 3 rotations arround the X, Y and Z
+  X,Y,Z translations and 3 rotations around the X, Y and Z
   axis. Rotations are represented by a vpRxyzVector.
 
   - Mixt frame is not implemented. By mixt frame we mean, translations
@@ -1622,7 +1622,7 @@ int main()
   qvel[4] = 0;               // Joint 5 velocity in rad/s
   qvel[5] = 0;               // Joint 6 velocity in rad/s
 
-  // Initialize the controller to position control
+  // Initialize the controller to velocity control
   robot.setRobotState(vpRobot::STATE_VELOCITY_CONTROL);
 
   while (1) {
@@ -2546,7 +2546,7 @@ void vpRobotViper650::closeGripper() const
 }
 
 #elif !defined(VISP_BUILD_SHARED_LIBS)
-// Work arround to avoid warning: libvisp_robot.a(vpRobotViper650.cpp.o) has
+// Work around to avoid warning: libvisp_robot.a(vpRobotViper650.cpp.o) has
 // no symbols
 void dummy_vpRobotViper650(){};
 #endif

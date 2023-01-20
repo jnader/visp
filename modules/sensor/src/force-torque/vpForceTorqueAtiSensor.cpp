@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,9 +30,6 @@
  *
  * Description:
  * ATI Force torque interface.
- *
- * Authors:
- * Fabien Spindler
  *
  *****************************************************************************/
 
@@ -203,11 +200,8 @@ void vpForceTorqueAtiSensor::setCalibrationFile(const std::string &calibfile, un
   if (s_calibinfo)
     destroyCalibration(s_calibinfo);
 
-  char file[FILENAME_MAX];
-  sprintf(file, "%s", m_calibfile.c_str());
-
   // Create calibration struct
-  s_calibinfo = createCalibration(file, m_index);
+  s_calibinfo = createCalibration(m_calibfile.c_str(), m_index);
   if (s_calibinfo == NULL) {
     throw vpException(vpException::fatalError, "Calibration file %s couldn't be loaded", m_calibfile.c_str());
   }
@@ -284,7 +278,7 @@ std::ostream &operator<<(std::ostream &os, const vpForceTorqueAtiSensor &ati)
 }
 
 #elif !defined(VISP_BUILD_SHARED_LIBS)
-// Work arround to avoid warning:
+// Work around to avoid warning:
 // libvisp_sensor.a(vpForceTorqueAtiSensor.cpp.o) has no symbols
 void dummy_vpForceTorqueAtiSensor(){};
 #endif

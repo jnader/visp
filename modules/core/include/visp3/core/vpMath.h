@@ -88,6 +88,9 @@
 class vpPoint;
 class vpHomogeneousMatrix;
 class vpColVector;
+class vpRotationVector;
+class vpRxyzVector;
+class vpTranslationVector;
 
 /*!
   \class vpMath
@@ -95,9 +98,7 @@ class vpColVector;
   \brief Provides simple mathematics computation tools that are not
   available in the C mathematics library (math.h)
 
-  \author Eric Marchand   (Eric.Marchand@irisa.fr) Irisa / Inria Rennes
 */
-
 class VISP_EXPORT vpMath
 {
 public:
@@ -108,6 +109,9 @@ public:
     \return Angle converted in degrees.
   */
   static inline double deg(double rad) { return (rad * 180.0) / M_PI; }
+
+  static vpColVector deg(const vpRotationVector &r);
+  static vpColVector deg(const vpColVector &r);
 
   /*!
     Convert an angle in degrees into radian.
@@ -211,6 +215,8 @@ public:
   static bool isNaN(float value);
   static bool isInf(double value);
   static bool isInf(float value);
+  static bool isFinite(double value);
+  static bool isFinite(float value);
 
   static double lineFitting(const std::vector<vpImagePoint> &imPts, double &a, double &b, double &c);
 
@@ -231,6 +237,8 @@ public:
 
   static vpHomogeneousMatrix ned2ecef(double lonDeg, double latDeg, double radius);
   static vpHomogeneousMatrix enu2ecef(double lonDeg, double latDeg, double radius);
+  static vpColVector enu2ned(const vpRxyzVector &rxyz);
+  static vpColVector enu2ned(const vpTranslationVector &rxyz);
 
   /*!
     Similar to the NumPy linspace function: "Return evenly spaced numbers over a specified interval."
@@ -314,7 +322,6 @@ long double vpMath::comb(unsigned int n, unsigned int p)
   \param x : Value to round.
 
   \return Nearest integer of x.
-
 */
 int vpMath::round(double x)
 {
@@ -334,7 +341,6 @@ int vpMath::round(double x)
 
   \param x : Value to test.
   \return -1 if x is negative, +1 if positive and 0 if zero.
-
 */
 int(vpMath::sign)(double x)
 {
@@ -353,7 +359,6 @@ int(vpMath::sign)(double x)
   \param x : Value to test.
   \param s : Tolerance threshold
   \return true if \f$ | x | < s \f$.
-
 */
 bool vpMath::nul(double x, double s) { return (fabs(x) < s); }
 

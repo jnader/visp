@@ -21,7 +21,7 @@ endforeach()
 
 if(VISP_HAVE_ZBAR)
   # Add specific build flag to turn off warnings coming from zbar 3rd party
-  visp_set_source_file_compile_flag(tutorial-pose-from-qrcode-image.cpp -Wno-unused-parameter)
+  visp_set_source_file_compile_flag(tutorial-pose-from-qrcode-image.cpp -Wno-unused-parameter -Wno-deprecated-declarations)
 endif()
 
 if(VISP_HAVE_FLYCAPTURE)
@@ -32,12 +32,13 @@ if(VISP_HAVE_REALSENSE2)
   # Add specific build flag to turn off warnings coming from librealsense 3rd party
   list(APPEND CXX_FLAGS_MUTE_WARNINGS "/wd4244")
   list(APPEND CXX_FLAGS_MUTE_WARNINGS "/wd4267")
-  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-unused-function")
-  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-sign-compare")
-  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-reorder")
-  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-overloaded-virtual")
-  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-ignored-qualifiers")
   list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-deprecated-copy")
+  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-deprecated-declarations")
+  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-ignored-qualifiers")
+  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-overloaded-virtual")
+  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-reorder")
+  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-sign-compare")
+  list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-unused-function")
 endif()
 
 if(CXX_FLAGS_MUTE_WARNINGS)

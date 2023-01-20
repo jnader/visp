@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,15 +31,12 @@
  * Description:
  * Camera calibration with chessboard or circle calibration grid.
  *
- * Authors:
- * Fabien Spindler
- *
  *****************************************************************************/
 #include <iostream>
 
 #include <visp3/core/vpConfig.h>
 
-#if VISP_HAVE_OPENCV_VERSION >= 0x020300
+#if VISP_HAVE_OPENCV_VERSION >= 0x030000
 
 #include <map>
 
@@ -238,7 +235,7 @@ int main(int argc, const char *argv[])
       reader.acquire(I);
       long frame_index = reader.getFrameIndex();
       char filename[FILENAME_MAX];
-      sprintf(filename, s.input.c_str(), frame_index);
+      snprintf(filename, FILENAME_MAX, s.input.c_str(), frame_index);
       std::string frame_name = vpIoTools::getName(filename);
       vpDisplay::display(I);
       vpDisplay::flush(I);
@@ -327,14 +324,41 @@ int main(int argc, const char *argv[])
 
     // Display calibration pattern occupancy
     drawCalibrationOccupancy(I, calib_info, s.boardSize.width);
-    vpDisplay::setTitle(I, "Calibration pattern occupancy");
-    vpDisplay::display(I);
-    vpDisplay::displayText(I, 15 * vpDisplay::getDownScalingFactor(I), 15 * vpDisplay::getDownScalingFactor(I),
-                           "Calibration pattern occupancy in the image", vpColor::red);
-    vpDisplay::displayText(I, I.getHeight() - 15 * vpDisplay::getDownScalingFactor(I),
-                           15 * vpDisplay::getDownScalingFactor(I), "Click to continue...", vpColor::red);
-    vpDisplay::flush(I);
-    vpDisplay::getClick(I);
+
+    cv::Mat1b img(I.getHeight(), I.getWidth());
+    vpImageConvert::convert(I, img);
+    cv::Mat3b imgColor(I.getHeight(), I.getWidth());
+    cv::applyColorMap(img, imgColor, cv::COLORMAP_JET);
+
+    // Draw calibration board corners
+    for (size_t idx1 = 0; idx1 < calib_info.size(); idx1++) {
+      const CalibInfo &calib = calib_info[idx1];
+
+      for (size_t idx2 = 0; idx2 < calib.m_imPts.size(); idx2++) {
+        const vpImagePoint &imPt = calib.m_imPts[idx2];
+        cv::rectangle(imgColor,
+                      cv::Rect(static_cast<int>(imPt.get_u() - 2), static_cast<int>(imPt.get_v() - 2),
+                               4 * vpDisplay::getDownScalingFactor(I), 4 * vpDisplay::getDownScalingFactor(I)),
+                      cv::Scalar(0, 0, 0), -1);
+      }
+    }
+
+    vpImage<vpRGBa> I_color;
+    vpImageConvert::convert(imgColor, I_color);
+    d.close(I);
+    d.init(I_color, 0, 0, "Calibration pattern occupancy");
+
+    vpDisplay::display(I_color);
+    vpDisplay::displayText(I_color, 15 * vpDisplay::getDownScalingFactor(I_color),
+                           15 * vpDisplay::getDownScalingFactor(I_color), "Calibration pattern occupancy in the image",
+                           vpColor::red);
+    vpDisplay::displayText(I_color, I_color.getHeight() - 20 * vpDisplay::getDownScalingFactor(I_color),
+                           15 * vpDisplay::getDownScalingFactor(I_color), "Click to continue...", vpColor::red);
+    vpDisplay::flush(I_color);
+    vpDisplay::getClick(I_color);
+
+    d.close(I_color);
+    d.init(I);
 
     std::stringstream ss_additional_info;
     ss_additional_info << "<date>" << vpTime::getDateTime() << "</date>";
@@ -397,7 +421,7 @@ int main(int argc, const char *argv[])
           vpDisplay::displayCross(I, imPt, 12 * vpDisplay::getDownScalingFactor(I), vpColor::green);
         }
 
-        vpDisplay::displayText(I, I.getHeight() - 15 * vpDisplay::getDownScalingFactor(I),
+        vpDisplay::displayText(I, I.getHeight() - 20 * vpDisplay::getDownScalingFactor(I),
                                15 * vpDisplay::getDownScalingFactor(I), "Click to continue...", vpColor::red);
         vpDisplay::flush(I);
         vpDisplay::getClick(I);
@@ -461,7 +485,7 @@ int main(int argc, const char *argv[])
           vpDisplay::displayCross(I, imPt, 12 * vpDisplay::getDownScalingFactor(I), vpColor::green);
         }
 
-        vpDisplay::displayText(I, I.getHeight() - 15 * vpDisplay::getDownScalingFactor(I),
+        vpDisplay::displayText(I, I.getHeight() - 20 * vpDisplay::getDownScalingFactor(I),
                                15 * vpDisplay::getDownScalingFactor(I), "Click to continue...", vpColor::red);
         vpDisplay::flush(I);
         vpDisplay::getClick(I);
@@ -470,23 +494,11 @@ int main(int argc, const char *argv[])
       std::cout << "\nGlobal reprojection error: " << error << std::endl;
       ss_additional_info << "<with_distortion>" << error << "</with_distortion></global_reprojection_error>";
 
-      vpImage<unsigned char> I_undist = I;
-#ifdef VISP_HAVE_X11
-      vpDisplayX d_undist(I_undist, I.getWidth() / vpDisplay::getDownScalingFactor(I) + 100, 0, "Undistorted image",
-                          vpDisplay::SCALE_AUTO);
-#elif defined VISP_HAVE_GDI
-      vpDisplayGDI d_undist(I_undist, I.getWidth() / vpDisplay::getDownScalingFactor(I) + 100, 0, "Undistorted image",
-                            vpDisplay::SCALE_AUTO);
-#elif defined VISP_HAVE_GTK
-      vpDisplayGTK d_undist(I_undist, I.getWidth() / vpDisplay::getDownScalingFactor(I) + 100, 0, "Undistorted image",
-                            vpDisplay::SCALE_AUTO);
-#elif defined VISP_HAVE_OPENCV
-      vpDisplayOpenCV d_undist(I_undist, I.getWidth() / vpDisplay::getDownScalingFactor(I) + 100, 0,
-                               "Undistorted image", vpDisplay::SCALE_AUTO);
-#endif
+      vpImage<unsigned char> I_undist;
+      vpImage<unsigned char> I_dist_undist(I.getHeight(), 2 * I.getWidth());
+      d.close(I);
+      d.init(I_dist_undist, 0, 0, "Straight lines have to be straight - distorted image / undistorted image");
 
-      vpDisplay::setTitle(I, "Straight lines have to be straight (distorted image)");
-      vpDisplay::setTitle(I_undist, "Straight lines have to be straight (undistorted image)");
       for (size_t idx = 0; idx < calib_info.size(); idx++) {
         std::cout << "\nThis tool computes the line fitting error (mean distance error) on image points extracted from "
                      "the raw distorted image."
@@ -495,12 +507,15 @@ int main(int argc, const char *argv[])
         I = calib_info[idx].m_img;
         vpImageTools::undistort(I, cam, I_undist);
 
-        vpDisplay::display(I);
-        vpDisplay::display(I_undist);
+        I_dist_undist.insert(I, vpImagePoint(0, 0));
+        I_dist_undist.insert(I_undist, vpImagePoint(0, I.getWidth()));
+        vpDisplay::display(I_dist_undist);
 
-        vpDisplay::displayText(I, 15 * vpDisplay::getDownScalingFactor(I), 15 * vpDisplay::getDownScalingFactor(I),
-                               calib_info[idx].m_frame_name, vpColor::red);
-        vpDisplay::displayText(I, 30 * vpDisplay::getDownScalingFactor(I), 15 * vpDisplay::getDownScalingFactor(I),
+        vpDisplay::displayText(I_dist_undist, 15 * vpDisplay::getDownScalingFactor(I_dist_undist),
+                               15 * vpDisplay::getDownScalingFactor(I_dist_undist),
+                               calib_info[idx].m_frame_name + std::string(" distorted"), vpColor::red);
+        vpDisplay::displayText(I_dist_undist, 30 * vpDisplay::getDownScalingFactor(I_dist_undist),
+                               15 * vpDisplay::getDownScalingFactor(I_dist_undist),
                                "Draw lines from first / last points.", vpColor::red);
         std::vector<vpImagePoint> grid_points = calib_info[idx].m_imPts;
         for (int i = 0; i < s.boardSize.height; i++) {
@@ -517,7 +532,7 @@ int main(int argc, const char *argv[])
 
           vpImagePoint ip1 = current_line.front();
           vpImagePoint ip2 = current_line.back();
-          vpDisplay::displayLine(I, ip1, ip2, vpColor::red);
+          vpDisplay::displayLine(I_dist_undist, ip1, ip2, vpColor::red);
         }
 
         std::cout << "\nThis tool computes the line fitting error (mean distance error) on image points extracted from "
@@ -535,12 +550,9 @@ int main(int argc, const char *argv[])
             grid_points.push_back(ip);
           }
 
-          vpDisplay::displayText(I_undist, 15 * vpDisplay::getDownScalingFactor(I_undist),
-                                 15 * vpDisplay::getDownScalingFactor(I_undist),
+          vpDisplay::displayText(I_dist_undist, 15 * vpDisplay::getDownScalingFactor(I_dist_undist),
+                                 I.getWidth() + 15 * vpDisplay::getDownScalingFactor(I_dist_undist),
                                  calib_info[idx].m_frame_name + std::string(" undistorted"), vpColor::red);
-          vpDisplay::displayText(I_undist, 30 * vpDisplay::getDownScalingFactor(I_undist),
-                                 15 * vpDisplay::getDownScalingFactor(I_undist), "Draw lines from first / last points.",
-                                 vpColor::red);
           for (int i = 0; i < s.boardSize.height; i++) {
             std::vector<vpImagePoint> current_line(grid_points.begin() + i * s.boardSize.width,
                                                    grid_points.begin() + (i + 1) * s.boardSize.width);
@@ -550,26 +562,26 @@ int main(int argc, const char *argv[])
             std::cout << calib_info[idx].m_frame_name << " undistorted image, line " << i + 1
                       << " fitting error: " << line_fitting_error << std::endl;
 
-            vpImagePoint ip1 = current_line.front();
-            vpImagePoint ip2 = current_line.back();
-            vpDisplay::displayLine(I_undist, ip1, ip2, vpColor::red);
+            vpImagePoint ip1 = current_line.front() + vpImagePoint(0, I.getWidth());
+            vpImagePoint ip2 = current_line.back() + vpImagePoint(0, I.getWidth());
+            vpDisplay::displayLine(I_dist_undist, ip1, ip2, vpColor::red);
           }
         } else {
           std::string msg("Unable to detect grid on undistorted image");
           std::cout << msg << std::endl;
           std::cout << "Check that the grid is not too close to the image edges" << std::endl;
-          vpDisplay::displayText(I_undist, 15 * vpDisplay::getDownScalingFactor(I_undist),
-                                 15 * vpDisplay::getDownScalingFactor(I_undist),
+          vpDisplay::displayText(I_dist_undist, 15 * vpDisplay::getDownScalingFactor(I_dist_undist),
+                                 15 * vpDisplay::getDownScalingFactor(I_dist_undist),
                                  calib_info[idx].m_frame_name + std::string(" undistorted"), vpColor::red);
-          vpDisplay::displayText(I_undist, 30 * vpDisplay::getDownScalingFactor(I_undist),
-                                 15 * vpDisplay::getDownScalingFactor(I_undist), msg, vpColor::red);
+          vpDisplay::displayText(I_dist_undist, 30 * vpDisplay::getDownScalingFactor(I_dist_undist),
+                                 15 * vpDisplay::getDownScalingFactor(I_dist_undist), msg, vpColor::red);
         }
 
-        vpDisplay::displayText(I, I.getHeight() - 15 * vpDisplay::getDownScalingFactor(I),
-                               15 * vpDisplay::getDownScalingFactor(I), "Click to continue...", vpColor::red);
-        vpDisplay::flush(I);
-        vpDisplay::flush(I_undist);
-        vpDisplay::getClick(I);
+        vpDisplay::displayText(
+            I_dist_undist, I_dist_undist.getHeight() - 20 * vpDisplay::getDownScalingFactor(I_dist_undist),
+            15 * vpDisplay::getDownScalingFactor(I_dist_undist), "Click to continue...", vpColor::red);
+        vpDisplay::flush(I_dist_undist);
+        vpDisplay::getClick(I_dist_undist);
       }
 
       std::cout << std::endl;

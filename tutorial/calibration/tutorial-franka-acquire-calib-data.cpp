@@ -15,14 +15,13 @@
 int main(int argc, char **argv)
 {
   try {
-    std::string robot_ip = "192.168.1.1";
+    std::string opt_robot_ip = "192.168.1.1";
 
     for (int i = 1; i < argc; i++) {
       if (std::string(argv[i]) == "--ip" && i + 1 < argc) {
-        robot_ip = std::string(argv[i + 1]);
+        opt_robot_ip = std::string(argv[i + 1]);
       } else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
-        std::cout << argv[0] << " [--ip 192.168.1.1] [--help] [-h]"
-                  << "\n";
+        std::cout << argv[0] << " [--ip " << opt_robot_ip << "] [--help] [-h]" << std::endl;
         return EXIT_SUCCESS;
       }
     }
@@ -30,7 +29,7 @@ int main(int argc, char **argv)
     vpImage<unsigned char> I;
 
     vpRobotFranka robot;
-    robot.connect(robot_ip);
+    robot.connect(opt_robot_ip);
 
     vpRealSense2 g;
     rs2::config config;
@@ -48,7 +47,7 @@ int main(int argc, char **argv)
     vpCameraParameters cam;
     vpXmlParserCamera xml_camera;
     cam = g.getCameraParameters(RS2_STREAM_COLOR, vpCameraParameters::perspectiveProjWithDistortion);
-    xml_camera.save(cam, "camera.xml", "Camera", width, height);
+    xml_camera.save(cam, "franka_camera.xml", "Camera", width, height);
 
 #if defined(VISP_HAVE_X11)
     vpDisplayX dc(I, 10, 10, "Color image");
@@ -75,8 +74,8 @@ int main(int argc, char **argv)
 
           std::stringstream ss_img, ss_pos;
 
-          ss_img << "image-" << cpt << ".png";
-          ss_pos << "pose_fPe_" << cpt << ".yaml";
+          ss_img << "franka_image-" << cpt << ".png";
+          ss_pos << "franka_pose_fPe_" << cpt << ".yaml";
           std::cout << "Save: " << ss_img.str() << " and " << ss_pos.str() << std::endl;
           vpImageIo::write(I, ss_img.str());
           fPe.saveYAML(ss_pos.str(), fPe);
@@ -87,12 +86,12 @@ int main(int argc, char **argv)
       vpDisplay::flush(I);
     }
   } catch (const vpException &e) {
-    std::cerr << "RealSense error " << e.what() << std::endl;
+    std::cerr << "ViSP exception " << e.what() << std::endl;
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
   }
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 #else
 int main()

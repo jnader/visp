@@ -1,4 +1,4 @@
-﻿                               ViSP
+                               ViSP
                      Visual Servoing Platform
                      Resume of the change log
 
@@ -7,21 +7,50 @@
 
 ViSP 3.5.1 (under development)
   - Contributors:
-    . Fabien Spindler
+    . Fabien Spindler, Souriya Trinh
   - New features and improvements
     . Video writer is now able to create the output folder recursively (see vpVideoWriter)
+    . Introduce Universal Robots support with new vpRobotUniversalRobots class that
+      allows to control an UR robot
+    . Introduce Vicon and Qualisys motion capture system interfaces in vpMocapVicon and
+      vpMocapQualisys classes respectively
+    . Image-based and position-based examples with UR robot
+    . Tutorial for extrinsic calibration improved with UR robot and Panda robot use cases
     . Tutorials in tutorial/grabber folder have now a new --no-display command line option
       that allows to grab a video remotely
+    . Introduce MAVLink interface using MavSDK 3rd party library interfaced in vpRobotMavsdk
+      class that allows to control a robot equiped with a Pixhawk
+    . Image-based visual-servoing, position and velocity control examples to control robots
+      equipped with Pixhawk (see vpRobotMavsdk doc)
+    . Windows 11 support
   - Tutorials
+    . New tutorial to list all the hardware (robot, camera, depth camera, lidar, mocap,
+      haptic devices, F/T sensor) supported by ViSP
+      https://visp-doc.inria.fr/doxygen/visp-daily/supported-material.html
     . New tutorial: How to manipulate a video or a sequence of images
       https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-video-manipulation.html
     . New tutorial: Planar object pose estimation using RGB-D data
       https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-planar-object-pose.html
+    . New tutorial: IBVS with a robot from Universal Robots
+      https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-universal-robot-ibvs.html
+    . New tutorial: PBVS with a robot from Universal Robots
+      https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-universal-robot-pbvs.html
+    . New tutorial: Image-based visual-servoing on a drone equipped with a Pixhawk
+      https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-pixhawk-vs.html
+    . New Tutorial: Installation from source for Windows 11 with MinGW-w64
+      https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-install-win11-mingw-w64.html
+    . New Tutorial: Installation from source for Windows 11 with Visual C++ 2022 (vc17)
+      https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-install-win11-msvc17.html
   - Bug fixed
     . [#1042] testColorConversion.cpp segfault randomly
     . [#1045] CXX standard not propagated when using pkg-config or visp-config
     . [#1046] vpIoTools::getParent() returns an empty string when folder separator is not found
     . [#1059] 3.5.0: Build fails on FreeBSD arm64: fatal error: 'asm/hwcap.h' file not found
+    . [#1077] Quick start build fails on Visual Studio 17 2022
+    . [#1080] Fails to configure with Xcode generator
+    . [#1094] vpIoTools::makeTempDirectory() fails to create a temporary directory inside
+      a parent directory on Unix
+    . [#1106] SIFT Illegal Instruction error on macOS Intel with OpenCV 4.6.0 installed with brew
 ----------------------------------------------
 ViSP 3.5.0 (released February 15, 2022)
   - Contributors:
@@ -37,6 +66,8 @@ ViSP 3.5.0 (released February 15, 2022)
       a model where px = py
     . Introduce Bayer demosaicing also called debayering in vpImageConvert
     . UEye grabber now support Bayer 8 color mode
+    . Introduce Occipital Structure Core RGB-D device support in vpOccipitalStructure
+      class
     . Update to use Catch2 2.13.7
     . Improve video reader and writer classes to consider a sequence of non consecutive
       images
@@ -419,7 +450,7 @@ ViSP 3.1.0 (released December 22nd, 2017)
     . [#137] Fix bug in extration of vpRotationMatrix from vpPoseVector using
              vpPoseVector::getRotationMatrix()
     . [#149] Bug in vpTime::measureTimeMicros() (OS detection was done wrong)
-    . [#160] Build issue with msvc arround std::min() std::max()
+    . [#160] Build issue with msvc around std::min() std::max()
     . [#162] Redefinition errors in WinSock2.h and winsock.h
     . [#165] Segmentation fault when cout a null row vector
     . [#171] Segfault when using vpMatrix::pseudoInverse()
@@ -827,7 +858,7 @@ ViSP 2.7.0 (released February 11th, 2013)
       mbtKltTracking.cpp
   - Bug fixed
     - [14646] ViSP doesn't build on Windows with MinGW
-    - [14651] Build error arround vpMatrix::pseudoInverse() with OpenCV 2.1.0
+    - [14651] Build error around vpMatrix::pseudoInverse() with OpenCV 2.1.0
     - [14661] Build error when GDI is not detected or turned off
     - [14818] Build error when only GTK display device is available
     - [14862] Lagrange pose estimation cannot handle planar objects with

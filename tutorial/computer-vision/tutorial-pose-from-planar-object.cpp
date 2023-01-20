@@ -52,6 +52,7 @@ constexpr auto ModelDataHeader{"data:"};
 constexpr auto DepthScale{0.001};
 } // namespace
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 class Model
 {
 public:
@@ -177,15 +178,15 @@ std::ostream &operator<<(std::ostream &os, const Model &model)
 std::tuple<vpImage<vpRGBa>, vpImage<uint16_t>, vpCameraParameters, vpCameraParameters, vpHomogeneousMatrix>
 readData(const std::string &input_directory, const unsigned int cpt = 0)
 {
-  char buffer[256];
+  char buffer[FILENAME_MAX];
   std::stringstream ss;
   ss << input_directory << "/color_image_%04d.jpg";
-  sprintf(buffer, ss.str().c_str(), cpt);
+  snprintf(buffer, FILENAME_MAX, ss.str().c_str(), cpt);
   const std::string filename_color = buffer;
 
   ss.str("");
   ss << input_directory << "/depth_image_%04d.bin";
-  sprintf(buffer, ss.str().c_str(), cpt);
+  snprintf(buffer, FILENAME_MAX, ss.str().c_str(), cpt);
   const std::string filename_depth = buffer;
 
   // Read color
@@ -329,6 +330,7 @@ std::map<Model::Id, vpImagePoint> getKeypointsFromUser(vpImage<vpRGBa> color_img
 
   return keypoints;
 }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 #endif // #if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_17) && (!defined(_MSC_VER) || ((VISP_CXX_STANDARD >=
 // VISP_CXX_STANDARD_17) && (_MSC_VER >= 1911))) && defined(VISP_HAVE_DISPLAY)
 

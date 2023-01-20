@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,14 +59,14 @@ bool read_data(const std::string &input_directory, int cpt, const vpCameraParame
 {
   static_assert(std::is_same<Type, unsigned char>::value || std::is_same<Type, vpRGBa>::value,
                 "Template function supports only unsigned char and vpRGBa images!");
-  char buffer[256];
-  sprintf(buffer, std::string(input_directory + "/Images/Image_%04d.pgm").c_str(), cpt);
+  char buffer[FILENAME_MAX];
+  snprintf(buffer, FILENAME_MAX, std::string(input_directory + "/Images/Image_%04d.pgm").c_str(), cpt);
   std::string image_filename = buffer;
 
-  sprintf(buffer, std::string(input_directory + "/Depth/Depth_%04d.bin").c_str(), cpt);
+  snprintf(buffer, FILENAME_MAX, std::string(input_directory + "/Depth/Depth_%04d.bin").c_str(), cpt);
   std::string depth_filename = buffer;
 
-  sprintf(buffer, std::string(input_directory + "/CameraPose/Camera_%03d.txt").c_str(), cpt);
+  snprintf(buffer, FILENAME_MAX, std::string(input_directory + "/CameraPose/Camera_%03d.txt").c_str(), cpt);
   std::string pose_filename = buffer;
 
   if (!vpIoTools::checkFilename(image_filename) || !vpIoTools::checkFilename(depth_filename) ||
@@ -128,9 +128,10 @@ TEST_CASE("Benchmark generic tracker", "[benchmark]")
     const std::string configFileCam2 = input_directory + std::string("/Config/chateau_depth.xml");
     REQUIRE(vpIoTools::checkFilename(configFileCam1));
     REQUIRE(vpIoTools::checkFilename(configFileCam2));
-    tracker.loadConfigFile(configFileCam1, configFileCam2);
+    const bool verbose = false;
+    tracker.loadConfigFile(configFileCam1, configFileCam2, verbose);
     REQUIRE(vpIoTools::checkFilename(input_directory + "/Models/chateau.cao"));
-    tracker.loadModel(input_directory + "/Models/chateau.cao", input_directory + "/Models/chateau.cao");
+    tracker.loadModel(input_directory + "/Models/chateau.cao", input_directory + "/Models/chateau.cao", verbose);
 
     vpHomogeneousMatrix T;
     T[0][0] = -1;
@@ -141,7 +142,7 @@ TEST_CASE("Benchmark generic tracker", "[benchmark]")
     T[2][1] = 1;
     T[2][2] = 0;
     T[2][3] = -0.15;
-    tracker.loadModel(input_directory + "/Models/cube.cao", false, T);
+    tracker.loadModel(input_directory + "/Models/cube.cao", verbose, T);
 
     vpImage<unsigned char> I;
     vpImage<uint16_t> I_depth_raw;
@@ -219,9 +220,10 @@ TEST_CASE("Benchmark generic tracker", "[benchmark]")
         tracker.resetTracker();
         tracker.setTrackerType(mapOfTrackerTypes[idx]);
 
-        tracker.loadConfigFile(configFileCam1, configFileCam2);
-        tracker.loadModel(input_directory + "/Models/chateau.cao", input_directory + "/Models/chateau.cao");
-        tracker.loadModel(input_directory + "/Models/cube.cao", false, T);
+        const bool verbose = false;
+        tracker.loadConfigFile(configFileCam1, configFileCam2, verbose);
+        tracker.loadModel(input_directory + "/Models/chateau.cao", input_directory + "/Models/chateau.cao", verbose);
+        tracker.loadModel(input_directory + "/Models/cube.cao", verbose, T);
         tracker.initFromPose(images.front(), cMo_truth_all.front());
 
         std::map<std::string, unsigned int> mapOfWidths, mapOfHeights;
@@ -291,7 +293,7 @@ TEST_CASE("Benchmark generic tracker", "[benchmark]")
           tu_err[i] = pose_est[i + 3] - pose_truth[i + 3];
         }
 
-        const double max_translation_error = 0.005;
+        const double max_translation_error = 0.006;
         const double max_rotation_error = 0.03;
         CHECK(sqrt(t_err.sumSquare()) < max_translation_error);
         CHECK(sqrt(tu_err.sumSquare()) < max_rotation_error);

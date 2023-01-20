@@ -31,9 +31,6 @@
  * Description:
  * Simple mathematical function not available in the C math library (math.h).
  *
- * Authors:
- * Eric Marchand
- *
  *****************************************************************************/
 
 /*!
@@ -52,12 +49,13 @@
 #include <visp3/core/vpMath.h>
 #include <visp3/core/vpMatrix.h>
 
-#if defined(VISP_HAVE_FUNC__ISNAN)
+#if defined(VISP_HAVE_FUNC__FINITE)
 #include <float.h>
 #endif
 
 #if !(defined(VISP_HAVE_FUNC_ISNAN) || defined(VISP_HAVE_FUNC_STD_ISNAN)) ||                                           \
-    !(defined(VISP_HAVE_FUNC_ISINF) || defined(VISP_HAVE_FUNC_STD_ISINF))
+    !(defined(VISP_HAVE_FUNC_ISINF) || defined(VISP_HAVE_FUNC_STD_ISINF)) ||                                           \
+    !(defined(VISP_HAVE_FUNC_ISFINITE) || defined(VISP_HAVE_FUNC_STD_ISFINITE) || defined(VISP_HAVE_FUNC__FINITE))
 #if defined _MSC_VER || defined __BORLANDC__
 typedef __int64 int64;
 typedef unsigned __int64 uint64;
@@ -67,11 +65,17 @@ typedef uint64_t uint64;
 #endif
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-typedef union Cv64suf {
+typedef union Vp64suf {
   //  int64 i; //Unused variable, should be harmless to comment it
   uint64 u;
   double f;
-} Cv64suf;
+} Vp64suf;
+
+typedef union Vp32suf {
+  // int i; //Unused variable, should be harmless to comment it
+  unsigned u;
+  float f;
+} Vp32suf;
 #endif
 #endif
 
@@ -79,9 +83,9 @@ const double vpMath::ang_min_sinc = 1.0e-8;
 const double vpMath::ang_min_mc = 2.5e-4;
 
 /*!
-   Check whether a double number is not a number (NaN) or not.
-   \param value : Double number to check.
-   \return true if value is Not A Number (as defined by IEEE754 standard) and false otherwise.
+  Check whether a double number is not a number (NaN) or not.
+  \param value : Double number to check.
+  \return true if value is Not A Number (as defined by IEEE754 standard) and false otherwise.
  */
 bool vpMath::isNaN(double value)
 {
@@ -93,16 +97,16 @@ bool vpMath::isNaN(double value)
   return (_isnan(value) != 0);
 #else
   // Taken from OpenCV source code CvIsNan()
-  Cv64suf ieee754;
+  Vp64suf ieee754;
   ieee754.f = value;
   return (((unsigned)(ieee754.u >> 32) & 0x7fffffff) + ((unsigned)ieee754.u != 0) > 0x7ff00000) != 0;
 #endif
 }
 
 /*!
-   Check whether a float number is not a number (NaN) or not.
-   \param value : Float number to check.
-   \return true if value is Not A Number (as defined by IEEE754 standard) and false otherwise.
+  Check whether a float number is not a number (NaN) or not.
+  \param value : Float number to check.
+  \return true if value is Not A Number (as defined by IEEE754 standard) and false otherwise.
  */
 bool vpMath::isNaN(float value)
 {
@@ -114,18 +118,18 @@ bool vpMath::isNaN(float value)
   return (_isnan(value) != 0);
 #else
   // Taken from OpenCV source code CvIsNan()
-  Cv32suf ieee754;
+  Vp32suf ieee754;
   ieee754.f = value;
   return ((unsigned)ieee754.u & 0x7fffffff) > 0x7f800000;
 #endif
 }
 
 /*!
-   Returns whether a double is an infinity value (either positive infinity or
-   negative infinity).
-   \param value : Double number to check.
-   \return true if value is a plus or minus infinity (as defined by IEEE754 standard)
-   and false otherwise.
+  Returns whether a double is an infinity value (either positive infinity or
+  negative infinity).
+  \param value : Double number to check.
+  \return true if value is a plus or minus infinity (as defined by IEEE754 standard)
+  and false otherwise.
  */
 bool vpMath::isInf(double value)
 {
@@ -133,22 +137,20 @@ bool vpMath::isInf(double value)
   return isinf(value);
 #elif defined(VISP_HAVE_FUNC_STD_ISINF)
   return std::isinf(value);
-#elif defined(VISP_HAVE_FUNC__FINITE)
-  return !_finite(value);
 #else
   // Taken from OpenCV source code CvIsInf()
-  Cv64suf ieee754;
+  Vp64suf ieee754;
   ieee754.f = value;
   return ((unsigned)(ieee754.u >> 32) & 0x7fffffff) == 0x7ff00000 && (unsigned)ieee754.u == 0;
 #endif
 }
 
 /*!
-   Returns whether a float is an infinity value (either positive infinity or
-   negative infinity).
-   \param value : Double number to check.
-   \return true if value is a plus or minus infinity (as defined by IEEE754 standard)
-   and false otherwise.
+  Returns whether a float is an infinity value (either positive infinity or
+  negative infinity).
+  \param value : Float number to check.
+  \return true if value is a plus or minus infinity (as defined by IEEE754 standard)
+  and false otherwise.
  */
 bool vpMath::isInf(float value)
 {
@@ -156,13 +158,49 @@ bool vpMath::isInf(float value)
   return isinf(value);
 #elif defined(VISP_HAVE_FUNC_STD_ISINF)
   return std::isinf(value);
-#elif defined(VISP_HAVE_FUNC__FINITE)
-  return !_finite(value);
 #else
   // Taken from OpenCV source code CvIsInf()
-  Cv32suf ieee754;
+  Vp32suf ieee754;
   ieee754.f = value;
   return ((unsigned)ieee754.u & 0x7fffffff) == 0x7f800000;
+#endif
+}
+
+/*!
+  Returns whether a double is a finite value (neither infinite nor NaN).
+  \param value : Double number to check.
+  \return true if value is neither infinite nor NaN (as defined by IEEE754 standard)
+  and false otherwise.
+ */
+bool vpMath::isFinite(double value)
+{
+#if defined(VISP_HAVE_FUNC_ISFINITE)
+  return isfinite(value);
+#elif defined(VISP_HAVE_FUNC_STD_ISFINITE)
+  return std::isfinite(value);
+#elif defined(VISP_HAVE_FUNC__FINITE)
+  return _finite(value);
+#else
+  return !vpMath::isInf(value) && !vpMath::isNaN(value);
+#endif
+}
+
+/*!
+  Returns whether a float is a finite value (neither infinite nor NaN).
+  \param value : Float number to check.
+  \return true if value is neither infinite nor NaN (as defined by IEEE754 standard)
+  and false otherwise.
+ */
+bool vpMath::isFinite(float value)
+{
+#if defined(VISP_HAVE_FUNC_ISFINITE)
+  return isfinite(value);
+#elif defined(VISP_HAVE_FUNC_STD_ISFINITE)
+  return std::isfinite(value);
+#elif defined(VISP_HAVE_FUNC__FINITE)
+  return _finitef(value);
+#else
+  return !vpMath::isInf(value) && !vpMath::isNaN(value);
 #endif
 }
 
@@ -173,7 +211,6 @@ bool vpMath::isInf(float value)
   \param x : Value of x.
 
   \return \f$ (1-cosx)/x^2 \f$
-
 */
 double vpMath::mcosc(double cosx, double x)
 {
@@ -190,7 +227,6 @@ double vpMath::mcosc(double cosx, double x)
   \param x  : Value of x.
 
   \return \f$ (1-sinc(x))/x^2 \f$
-
 */
 double vpMath::msinc(double sinx, double x)
 {
@@ -206,7 +242,6 @@ double vpMath::msinc(double sinx, double x)
   \param x : Value of x.
 
   \return Sinus cardinal.
-
 */
 double vpMath::sinc(double x)
 {
@@ -222,7 +257,6 @@ double vpMath::sinc(double x)
   \param x : Value of x.
 
   \return Sinus cardinal.
-
 */
 double vpMath::sinc(double sinx, double x)
 {
@@ -383,17 +417,41 @@ int vpMath::modulo(int a, int n) { return ((a % n) + n) % n; }
 
 /*!
   Compute from a given longitude, latitude and a sphere radius the homogeneous transformation
-  from the NED frame to the ECEF frame.
+  from the NED frame to the ECEF frame:
+
+  \f[
+  \begin{bmatrix}
+    X_{\text{ecef}} \\
+    Y_{\text{ecef}} \\
+    Z_{\text{ecef}}
+  \end{bmatrix}
+  =
+  \begin{bmatrix}
+    -\sin \varphi \cos \lambda & -\sin \lambda & -\cos \varphi \cos \lambda \\
+    -\sin \varphi \sin \lambda & \cos \lambda & -\cos \varphi \sin \lambda \\
+    \cos \varphi & 0 & -\sin \varphi
+  \end{bmatrix}
+  +
+  \begin{bmatrix}
+    \text{r} \cos \varphi \cos \lambda \\
+    \text{r} \cos \varphi \sin \lambda \\
+    \text{r} \sin \varphi
+  \end{bmatrix}
+  \f]
+
+  \image html vpMath_ECEF_NED_Longitude_Latitude_relationships.png
 
   See also:
-    - https://en.wikipedia.org/wiki/Local_tangent_plane_coordinates#Local_north,_east,_down_(NED)_coordinates
-    - https://gssc.esa.int/navipedia/index.php/Cartesian_and_ellipsoidal_coordinates
+    - [Local north, east, down (NED) coordinates](https://en.wikipedia.org/wiki/Local_tangent_plane_coordinates#Local_north,_east,_down_(NED)_coordinates)
+    - [Cartesian and ellipsoidal coordinates](https://gssc.esa.int/navipedia/index.php/Cartesian_and_ellipsoidal_coordinates)
 
-  \param lonDeg : The longitude in degree.
-  \param latDeg : The latitude in degree.
-  \param radius : The sphere radius in meter.
+  \param lonDeg : The longitude in degree or angle \f$\lambda\f$ in previous equation.
+  \param latDeg : The latitude in degree or angle \f$\varphi\f$ in previous equation.
+  \param radius : The sphere radius \f$r\f$ in meter.
 
   \return The homogeneous transformation from NED to ECEF frame.
+
+  \sa enu2ecef(), getLocalTangentPlaneTransformations()
 */
 vpHomogeneousMatrix vpMath::ned2ecef(double lonDeg, double latDeg, double radius)
 {
@@ -410,18 +468,42 @@ vpHomogeneousMatrix vpMath::ned2ecef(double lonDeg, double latDeg, double radius
 
 /*!
   Compute from a given longitude, latitude and a sphere radius the homogeneous transformation
-  from the ENU frame to the ECEF frame.
+  from the ENU frame to the ECEF frame:
 
-  See also:
-    - https://en.wikipedia.org/wiki/Geographic_coordinate_conversion#From_ENU_to_ECEF
-    - https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates
-    - https://gssc.esa.int/navipedia/index.php/Cartesian_and_ellipsoidal_coordinates
+  \f[
+    \begin{bmatrix}
+      X_{\text{ecef}} \\
+      Y_{\text{ecef}} \\
+      Z_{\text{ecef}}
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+      -\sin \lambda & -\sin \varphi \cos \lambda & \cos \varphi \cos \lambda \\
+      \cos \lambda & -\sin \varphi \sin \lambda & \cos \varphi \sin \lambda \\
+      0 & \cos \varphi & \sin \varphi
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+      \text{r} \cos \varphi \cos \lambda \\
+      \text{r} \cos \varphi \sin \lambda \\
+      \text{r} \sin \varphi
+    \end{bmatrix}
+  \f]
 
-  \param lonDeg : The longitude in degree.
-  \param latDeg : The latitude in degree.
-  \param radius : The sphere radius in meter.
+  \image html vpMath_ECEF_ENU_Longitude_Latitude_relationships.png
+
+  \sa
+    - [From ENU to ECEF](https://en.wikipedia.org/wiki/Geographic_coordinate_conversion#From_ENU_to_ECEF)
+    - [Transformations between ECEF and ENU coordinates](https://gssc.esa.int/navipedia/index.php/Transformations_between_ECEF_and_ENU_coordinates)
+    - [Cartesian and ellipsoidal coordinates](https://gssc.esa.int/navipedia/index.php/Cartesian_and_ellipsoidal_coordinates)
+
+  \param lonDeg : The longitude in degree or angle \f$\lambda\f$ in previous equation.
+  \param latDeg : The latitude in degree or angle \f$\varphi\f$ in previous equation.
+  \param radius : The sphere radius \f$r\f$ in meter.
 
   \return The homogeneous transformation from ENU to ECEF frame.
+
+  \sa ned2ecef(), getLocalTangentPlaneTransformations()
 */
 vpHomogeneousMatrix vpMath::enu2ecef(double lonDeg, double latDeg, double radius)
 {
@@ -461,7 +543,11 @@ std::vector<std::pair<double, double> > vpMath::computeRegularPointsOnSphere(uns
   double d_phi = a / d_theta;
 
   std::vector<std::pair<double, double> > lonlat_vec;
-  lonlat_vec.reserve(std::sqrt(maxPoints));
+#if (VISP_CXX_STANDARD > VISP_CXX_STANDARD_98)
+  lonlat_vec.reserve(static_cast<unsigned int>(std::sqrt(maxPoints)));
+#else
+  lonlat_vec.reserve(static_cast<unsigned int>(std::sqrt(static_cast<double>(maxPoints))));
+#endif
   for (int m = 0; m < m_theta; m++) {
     double theta = M_PI * (m + 0.5) / m_theta;
     int m_phi = static_cast<int>(round(2.0 * M_PI * sin(theta) / d_phi));
@@ -480,8 +566,8 @@ std::vector<std::pair<double, double> > vpMath::computeRegularPointsOnSphere(uns
 /*!
   Compute transformations from the local tangent plane (e.g. NED, ECU, ...) to the ECEF frame.
 
-  See also:
-    - https://en.wikipedia.org/wiki/Local_tangent_plane_coordinates
+  \sa
+    - [Local tangent plane coordinates](https://en.wikipedia.org/wiki/Local_tangent_plane_coordinates)
 
   Following image illustrates the camera poses sampled using longitude / latitude coordinates:
 
@@ -493,6 +579,8 @@ std::vector<std::pair<double, double> > vpMath::computeRegularPointsOnSphere(uns
   and a radius the corresponding transformation from the local frame (e.g. NED or ENU) to the ECEF frame.
 
   \return The vector of ecef_M_local homogeneous transformations.
+
+  \sa enu2ecef(), ned2ecef()
 */
 std::vector<vpHomogeneousMatrix> vpMath::getLocalTangentPlaneTransformations(const std::vector<std::pair<double, double> > &lonlatVec, double radius,
                                                                              vpHomogeneousMatrix (*toECEF)(double lonDeg_, double latDeg_, double radius_))
@@ -544,4 +632,67 @@ vpHomogeneousMatrix vpMath::lookAt(const vpColVector &from, const vpColVector &t
   wMc[2][0] = right[2]; wMc[2][1] = up[2]; wMc[2][2] = forward[2]; wMc[2][3] = from[2];
 
   return wMc;
+}
+
+/*!
+ * Convert angles of a rotation vector into degrees.
+ *
+ * \param r : Rotation vector with angles in radians.
+ * \return Corresponding column vector with angles converted in degrees.
+ */
+vpColVector vpMath::deg(const vpRotationVector &r)
+{
+  if (r.size() == 4) {
+    throw(vpException(vpException::fatalError, "Cannot convert angles of a quaternion vector in degrees!"));
+  }
+  vpColVector r_deg(r.size());
+  for (unsigned int i = 0; i < r.size(); i++)  {
+    r_deg[i] = vpMath::deg(r[i]);
+  }
+  return r_deg;
+}
+
+/*!
+ * Convert angles of a column vector from radians to degrees.
+ *
+ * \param r : Column vector with angles in radians.
+ * \return Corresponding column vector with angles converted in degrees.
+ */
+vpColVector vpMath::deg(const vpColVector &r)
+{
+  vpColVector r_deg(r.size());
+  for (unsigned int i = 0; i < r.size(); i++)  {
+    r_deg[i] = vpMath::deg(r[i]);
+  }
+  return r_deg;
+}
+
+/*!
+ * Convert attitude euler angle values (roll, pitch, yaw) from ENU (East-North-Up) to NED (North-East-Down) frame.
+ * \param enu : Vector of angles (roll, pitch, yaw) in [rad] in ENU frame.
+ * \return Converted angles in NED frame.
+ * \sa vpMath::enu2ned(const vpTranslationVector &)
+ */
+vpColVector vpMath::enu2ned(const vpRxyzVector &enu)
+{
+  vpColVector ned(3);
+  ned[0] = enu[0];
+  ned[1] = -enu[1];
+  ned[2] = -enu[2] + M_PI_2;
+  return ned;
+}
+
+/*!
+ * Convert attitude position values (x, y, z) from ENU (East-North-Up) to NED (North-East-Down) frame.
+ * \param enu : Position vector (x, y, z) in [m] in ENU frame.
+ * \return Converted position in NED frame.
+ * \sa vpMath::enu2ned(const vpRxyzVector &)
+ */
+vpColVector vpMath::enu2ned(const vpTranslationVector &enu)
+{
+  vpColVector ned(3);
+  ned[0] = enu[1];
+  ned[1] = enu[0];
+  ned[2] = -enu[2];
+  return ned;
 }

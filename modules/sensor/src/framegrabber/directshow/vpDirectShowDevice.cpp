@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,9 +30,6 @@
  *
  * Description:
  * DirectShow device description.
- *
- * Authors:
- * Bruno Renier
  *
  *****************************************************************************/
 
@@ -70,7 +67,7 @@ bool vpDirectShowDevice::init(const CComPtr<IMoniker> &pMoniker)
 
   // successfully got the name
   if (SUCCEEDED(hr)) {
-    sprintf(tmp, "%S", varName.bstrVal);
+    snprintf(tmp, FILENAME_MAX, "%S", varName.bstrVal);
     name = tmp;
   }
 
@@ -80,7 +77,7 @@ bool vpDirectShowDevice::init(const CComPtr<IMoniker> &pMoniker)
 
   // successfully got the description
   if (SUCCEEDED(hr)) {
-    sprintf(tmp, "%S", varDesc.bstrVal);
+    snprintf(tmp, FILENAME_MAX, "%S", varDesc.bstrVal);
     desc = tmp;
   }
 
@@ -90,7 +87,7 @@ bool vpDirectShowDevice::init(const CComPtr<IMoniker> &pMoniker)
 
   // successfully got the device path
   if (SUCCEEDED(hr)) {
-    sprintf(tmp, "%S", varDevPath.bstrVal);
+    snprintf(tmp, FILENAME_MAX, "%S", varDevPath.bstrVal);
     devPath = tmp;
   }
 
@@ -116,7 +113,7 @@ VISP_EXPORT std::ostream &operator<<(std::ostream &os, vpDirectShowDevice &dev)
 }
 
 #elif !defined(VISP_BUILD_SHARED_LIBS)
-// Work arround to avoid warning: libvisp_sensor.a(vpDirectShowDevice.cpp.o)
+// Work around to avoid warning: libvisp_sensor.a(vpDirectShowDevice.cpp.o)
 // has no symbols
 void dummy_vpDirectShowDevice(){};
 #endif

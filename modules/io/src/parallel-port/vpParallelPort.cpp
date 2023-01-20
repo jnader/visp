@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,9 +30,6 @@
  *
  * Description:
  * Parallel port management.
- *
- * Authors:
- * Fabien Spindler
  *
  *****************************************************************************/
 
@@ -70,7 +67,7 @@ static unsigned char vpParallelPortData;
 */
 vpParallelPort::vpParallelPort() : fd(0), device()
 {
-  sprintf(device, "/dev/parport0");
+  device = "/dev/parport0";
 
   this->open();
 
@@ -97,7 +94,7 @@ vpParallelPort::~vpParallelPort() { this->close(); }
 */
 void vpParallelPort::open()
 {
-  fd = ::open("/dev/parport0", O_WRONLY);
+  fd = ::open(device.c_str(), O_WRONLY);
   if (fd < 0) {
     printf("Can't open /dev/parport0\n");
     printf("Check if you have write access to /dev/parport0\n");
@@ -126,10 +123,7 @@ void vpParallelPort::open()
 
   unsigned char data = 5; // 0x00000101 = 5 in decimal
   parport.sendData(data); // D0 and D2 are set to logical level 1
-
   \endcode
-
-  \return true if the device was close, false if an error occurs.
 */
 void vpParallelPort::sendData(unsigned char &data)
 {
@@ -167,7 +161,7 @@ void vpParallelPort::close()
 }
 
 #elif !defined(VISP_BUILD_SHARED_LIBS)
-// Work arround to avoid warning: libvisp_core.a(vpParallelPort.cpp.o) has no
+// Work around to avoid warning: libvisp_core.a(vpParallelPort.cpp.o) has no
 // symbols
 void dummy_vpParallelPort(){};
 #endif

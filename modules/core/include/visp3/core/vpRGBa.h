@@ -43,7 +43,7 @@
 /*!
   \file vpRGBa.h
   \brief Define the object vpRGBa that is used to build color
-  images (it define a RGB 32 bits structure, fourth byte is not used)
+  images (it defines a RGB 32 bits structure, fourth byte is not used)
 */
 
 #include <visp3/core/vpColVector.h>
@@ -72,7 +72,6 @@ public:
     Basic constructor.
 
     Build a black value.
-
   */
   inline vpRGBa() : R(0), G(0), B(0), A(vpRGBa::alpha_default) {}
 
@@ -85,7 +84,6 @@ public:
     \param g : Green value.
     \param b : Blue value.
     \param a : Additional value.
-
   */
   inline vpRGBa(unsigned char r, unsigned char g, unsigned char b, unsigned char a = vpRGBa::alpha_default)
     : R(r), G(g), B(b), A(a)
@@ -98,7 +96,6 @@ public:
     Initialize all the R, G, B, A components to \e v.
 
     \param v : Value to set.
-
   */
   inline vpRGBa(unsigned char v) : R(v), G(v), B(v), A(v) {}
 
@@ -114,13 +111,12 @@ public:
     G=v[1]
     B=v[2]
     A=v[3]
-
   */
   inline vpRGBa(const vpColVector &v) : R(0), G(0), B(0), A(vpRGBa::alpha_default) { *this = v; }
 
   // We cannot add here the following destructor without changing the
   // hypothesis that the size of this class is 4. With the destructor it
-  // becomes 16 that does break a lot of things arround image conversions
+  // becomes 16 that does break a lot of things around image conversions
   // virtual ~vpRGBa() {}; // Not to implement
 
   vpRGBa &operator=(const unsigned char &v);

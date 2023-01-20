@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,15 +31,25 @@
  * Description:
  * Directory management.
  *
- * Authors:
- * Fabien Spindler
- *
  *****************************************************************************/
 
 /*!
   \file vpIoTools.cpp
   \brief File and directories basic tools.
 */
+
+// At this point, to make scandir() working as expected on armv7 virtualized on a x86-64bit architecture
+// (see github/workflow/other-arch-isolated.yml) we need to define _FILE_OFFSET_BITS=64. Otherwise
+// testVideo.cpp will fail.
+// Since adding here something like:
+//   #include <visp3/core/vpConfig.h>
+//   #ifdef VISP_DEFINE_FILE_OFFSET_BITS
+//   # define _FILE_OFFSET_BITS 64
+//   #endif
+// where VISP_DEFINE_FILE_OFFSET_BITS is defined in vpConfig.h doesn't work (my explanation is that the define
+// should be done before any other includes; in vpConfig.h there is cstdlib that is included), the other way
+// that was retained is to add to vpIoTools.cpp COMPILE_DEFINTIONS _FILE_OFFSET_BITS=64 (see CMakeLists.txt)
+
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -667,15 +677,10 @@ std::string getUuid()
 
   \warning This function is not implemented on WINRT.
 
-  \param dirname : Name of the directory to create, or location of an existing directory.
-  If \e dirname corresponds to an existing directory, \e dirname is considered as a parent directory.
-  The temporary directory is then created inside the parent directory.
-  Otherwise, \e dirname needs to end with "XXXXXX", which will be converted into random characters in order to create
-  a unique directory name.
+  \param dirname : Parent directory in which a temporary directory will be created or temporary directory that ends with
+  "XXXXXX", which will be converted into random characters in order to create a unique directory name.
 
   \return String corresponding to the absolute path to the generated directory name.
-
-  \exception vpIoException::invalidDirectoryName : The \e dirname is invalid.
 
   \exception vpIoException::cantCreateDirectory : If the directory cannot be created.
 
@@ -733,22 +738,24 @@ std::string vpIoTools::makeTempDirectory(const std::string &dirname)
   std::string dirname_cpy = std::string(dirname);
   std::string correctEnding = "XXXXXX";
 
-  size_t endingLength = correctEnding.length();
-  size_t dirNameLength = dirname_cpy.length();
-
   // If dirname is an unexisting directory, it should end with XXXXXX in order to create a temp directory
   if (!vpIoTools::checkDirectory(dirname_cpy)) {
-    if (endingLength > dirNameLength) {
-      throw(vpIoException(vpIoException::invalidDirectoryName,
-                          "Unable to create temp directory '%s'. It should end with XXXXXX.", dirname_cpy.c_str()));
+#if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))) // UNIX
+    // Check if dirname ends with XXXXXX
+    if (dirname_cpy.rfind(correctEnding) == std::string::npos) {
+      if (dirname_cpy.at(dirname_cpy.length() - 1) != '/') {
+        dirname_cpy = dirname_cpy + "/";
+      }
+      try {
+        vpIoTools::makeDirectory(dirname_cpy);
+      } catch (const vpException &e) {
+        throw e;
+      }
+
+      dirname_cpy = dirname_cpy + "XXXXXX";
     }
 
-    if (dirname.compare(dirNameLength - endingLength, endingLength, correctEnding) != 0) {
-      throw(vpIoException(vpIoException::invalidDirectoryName,
-                          "Unable to create temp directory '%s'. It should end with XXXXXX.", dirname_cpy.c_str()));
-    }
-
-#if defined(_WIN32) && !defined(WINRT)
+#elif defined(_WIN32) && !defined(WINRT)
     // Remove XXXXXX
     dirname_cpy = dirname_cpy.substr(0, dirname_cpy.rfind(correctEnding));
     // Append UUID
@@ -847,10 +854,12 @@ bool vpIoTools::copy(const std::string &src, const std::string &dst)
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))) // UNIX
 #if TARGET_OS_IOS == 0 // The following code is not working on iOS since
                        // wordexp() is not available
-    char cmd[FILENAME_MAX];
-    int ret;
-    sprintf(cmd, "cp -p %s %s", src.c_str(), dst.c_str());
-    ret = system(cmd);
+    std::stringstream cmd;
+    cmd << "cp -p ";
+    cmd << src;
+    cmd << " ";
+    cmd << dst;
+    int ret = system(cmd.str().c_str());
     if (ret) {
     }; // to avoid a warning
     // std::cout << cmd << " return value: " << ret << std::endl;
@@ -861,12 +870,12 @@ bool vpIoTools::copy(const std::string &src, const std::string &dst)
 #endif
 #elif defined(_WIN32)
 #if (!defined(WINRT))
-    char cmd[FILENAME_MAX];
-    int ret;
-    std::string src_ = vpIoTools::path(src);
-    std::string dst_ = vpIoTools::path(dst);
-    sprintf(cmd, "copy %s %s", src_.c_str(), dst_.c_str());
-    ret = system(cmd);
+    std::stringstream cmd;
+    cmd << "copy ";
+    cmd << vpIoTools::path(src);
+    cmd << " ";
+    cmd << vpIoTools::path(dst);
+    int ret = system(cmd.str().c_str());
     if (ret) {
     }; // to avoid a warning
     // std::cout << cmd << " return value: " << ret << std::endl;
@@ -881,10 +890,12 @@ bool vpIoTools::copy(const std::string &src, const std::string &dst)
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))) // UNIX
 #if TARGET_OS_IOS == 0 // The following code is not working on iOS since
                        // wordexp() is not available
-    char cmd[FILENAME_MAX];
-    int ret;
-    sprintf(cmd, "cp -p -r %s %s", src.c_str(), dst.c_str());
-    ret = system(cmd);
+    std::stringstream cmd;
+    cmd << "cp -p ";
+    cmd << src;
+    cmd << " ";
+    cmd << dst;
+    int ret = system(cmd.str().c_str());
     if (ret) {
     }; // to avoid a warning
     // std::cout << cmd << " return value: " << ret << std::endl;
@@ -895,12 +906,12 @@ bool vpIoTools::copy(const std::string &src, const std::string &dst)
 #endif
 #elif defined(_WIN32)
 #if (!defined(WINRT))
-    char cmd[FILENAME_MAX];
-    int ret;
-    std::string src_ = vpIoTools::path(src);
-    std::string dst_ = vpIoTools::path(dst);
-    sprintf(cmd, "copy %s %s", src_.c_str(), dst_.c_str());
-    ret = system(cmd);
+    std::stringstream cmd;
+    cmd << "copy ";
+    cmd << vpIoTools::path(src);
+    cmd << " ";
+    cmd << vpIoTools::path(dst);
+    int ret = system(cmd.str().c_str());
     if (ret) {
     }; // to avoid a warning
     // std::cout << cmd << " return value: " << ret << std::endl;
@@ -944,9 +955,11 @@ bool vpIoTools::remove(const std::string &file_or_dir)
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))) // UNIX
 #if TARGET_OS_IOS == 0 // The following code is not working on iOS since
                        // wordexp() is not available
-    char cmd[FILENAME_MAX];
-    sprintf(cmd, "rm -rf \"%s\"", file_or_dir.c_str());
-    int ret = system(cmd);
+    std::stringstream cmd;
+    cmd << "rm -rf \"";
+    cmd << file_or_dir;
+    cmd << "\"";
+    int ret = system(cmd.str().c_str());
     if (ret) {
     }; // to avoid a warning
     // std::cout << cmd << " return value: " << ret << std::endl;
@@ -957,10 +970,11 @@ bool vpIoTools::remove(const std::string &file_or_dir)
 #endif
 #elif defined(_WIN32)
 #if (!defined(WINRT))
-    char cmd[FILENAME_MAX];
-    std::string file_or_dir_ = vpIoTools::path(file_or_dir);
-    sprintf(cmd, "rmdir /S /Q %s", file_or_dir_.c_str());
-    int ret = system(cmd);
+    std::stringstream cmd;
+    cmd << "rmdir /S /Q ";
+    cmd << vpIoTools::path(file_or_dir);
+    cmd << "\"";
+    int ret = system(cmd.str().c_str());
     if (ret) {
     }; // to avoid a warning
     // std::cout << cmd << " return value: " << ret << std::endl;
@@ -1309,10 +1323,10 @@ void vpIoTools::addNameElement(const std::string &strTrue, const double &val)
 {
   // if(val != 0.)
   if (std::fabs(val) < std::numeric_limits<double>::epsilon()) {
-    char valC[256];
-    sprintf(valC, "%.3f", val);
-    std::string valS(valC);
-    baseName += "_" + strTrue + valS;
+    std::stringstream valS;
+    valS.precision(4);
+    valS << val;
+    baseName += "_" + strTrue + valS.str();
   }
 }
 
@@ -1579,7 +1593,6 @@ long vpIoTools::getIndex(const std::string &filename, const std::string &format)
   size_t indexBegin = format.find_last_of('%');
   size_t indexEnd = format.find_first_of('d', indexBegin);
   size_t suffixLength = format.length() - indexEnd - 1;
-
   // Extracting index
   if (filename.length() <= suffixLength + indexBegin) {
     return -1;
@@ -1595,7 +1608,7 @@ long vpIoTools::getIndex(const std::string &filename, const std::string &format)
 
   // Checking that format with inserted index equals filename
   char nameByFormat[FILENAME_MAX];
-  sprintf(nameByFormat, format.c_str(), index);
+  snprintf(nameByFormat, FILENAME_MAX, format.c_str(), index);
   if (std::string(nameByFormat) != filename) {
     return -1;
   }
@@ -1604,7 +1617,7 @@ long vpIoTools::getIndex(const std::string &filename, const std::string &format)
 
 /*!
    Returns the pathname string of this pathname's parent.
-   
+
    \param[in] pathname : Pathname from which parent name is extracted using vpIoTools::separator.
    When the separator is not found, it returns "." as the current parent folder.
 
@@ -1626,10 +1639,9 @@ std::string vpIoTools::getParent(const std::string &pathname)
     if (index != std::string::npos) {
       return convertedPathname.substr(0, index);
     }
-    
+
     return ".";
-  } 
-  else {
+  } else {
     return "";
   }
 }

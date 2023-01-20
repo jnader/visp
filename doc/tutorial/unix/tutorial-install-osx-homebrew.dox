@@ -100,11 +100,22 @@ If you have an Intel Realsense RGB-D camera (R200, F200, SR300, LR200, RZ300, D4
 $ brew install librealsense pcl pkg-config
 \endverbatim
 
-\warning `pcl 1.12.1` has a dependency to `qt5` that is keg-only, which means it was not symlinked into `/usr/local`. As a consequence, ViSP will be not able to detect `pcl` leading to a build issue (see \ref install_brew_issues_pcl_1_12_1). The solution to build ViSP with `pcl 1.12.1` is here to run the additional commands:
+\warning `pcl 1.12.1` has a dependency to `qt5` that is keg-only, which means it was not symlinked
+into `/usr/local`. As a consequence, ViSP will be not able to detect `pcl` as it should be, leading to
+a build issue (see \ref install_brew_issues_pcl_1_12_1).
+The solution is to set `Qt5_DIR` cmake or environment var with the path where `Qt5Config.cmake` or `qt5-config.cmake` is located.
+In our case, `Qt5_DIR` should be set to `$(brew --prefix qt5)/lib/cmake/Qt5`.
+There are two options:
+1. Passing `Qt5_DIR` as a cmake var during ViSP configuration:
 ```
-$ brew link --force qt5
-$ sudo ln -s $(brew --prefix qt5)/mkspecs /usr/local/mkspecs
-$ sudo ln -s $(brew --prefix qt5)/plugins /usr/local/plugins
+$ cmake ../visp -DQt5_DIR=$(brew --prefix qt5)/lib/cmake/Qt5
+$ make -j$(sysctl -n hw.logicalcpu)
+```
+2. Setting `Qt5_DIR` as an environment var:
+```
+$ export Qt5_DIR=$(brew --prefix qt5)/lib/cmake/Qt5
+$ cmake ../visp
+$ make -j$(sysctl -n hw.logicalcpu)
 ```
 
 \subsubsection install_brew_3rdparty_pylon Pylon 3rd party
@@ -155,6 +166,87 @@ $ make -j$(sysctl -n hw.logicalcpu) Samples
 \endverbatim
 
 After completion, sample apps may be run from the Apps directory.
+
+\subsubsection install_brew_3rdparty_qualisys Qualisys Mocap 3rd party
+
+If you have the [Qualisys](https://www.qualisys.com) Motion Capture System you can optionally install
+[qualisys_cpp_sdk](https://github.com/qualisys/qualisys_cpp_sdk) from source to enable vpMocapQualisys usage.
+
+\verbatim
+$ mkdir -p $VISP_WS/3rdparty/qualisys
+$ cd $VISP_WS/3rdparty/qualisys
+$ git clone https://github.com/qualisys/qualisys_cpp_sdk.git
+$ cd qualisys_cpp_sdk
+$ mkdir build
+$ cd build
+$ cmake .. -DBUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Release
+$ make -j$(sysctl -n hw.logicalcpu)
+$ make install
+\endverbatim
+
+After installation the SDK is available in `/usr/local` and will be detected by ViSP if you run
+a new CMake configuration step over ViSP source code.
+
+\subsubsection install_brew_3rdparty_vicon Vicon Mocap 3rd party
+
+If you have the [Vicon](https://www.vicon.com) Motion Capture System you can optionally install
+[Vicon Datastream SDK](https://www.vicon.com/software/datastream-sdk/) to enable vpMocapVicon usage.
+
+<b>1. Get Vicon Datastream SDK</b>
+
+- Download latest Vicon Datastream SDK from [here](https://www.vicon.com/software/datastream-sdk/?section=downloads).
+At the time this tutorial was written, we donwloaded `ViconDataStreamSDK_1.11.0_128037.zip`.
+- Unzip SDK for macOS:
+\verbatim
+$ mkdir -p $VISP_WS/3rdparty/vicon
+$ cd $VISP_WS/3rdparty/vicon
+$ mv ~/Downloads/ViconDataStreamSDK_1.1*.zip .
+$ unzip ViconDataStreamSDK_1.*.zip
+$ unzip ViconDataStreamSDK_1.*_Mac64.zip
+\endverbatim
+
+After installation the SDK is available in `$VISP_WS/3rdparty/vicon/Mac64`.
+
+<b>2. Setup for usage</b>
+
+To help ViSP to detect the location of Vicon Datastream SDK you will need to setup the following environment var:
+
+\verbatim
+$ export VICON_DIR=$VISP_WS/3rdparty/vicon/Mac64
+\endverbatim
+\note This can also be done during ViSP cmake configuration like:
+\verbatim
+$ cd $VISP_WS/visp-build
+$ cmake ../visp -DVICON_DIR=$VISP_WS/3rdparty/vicon/Mac64
+\endverbatim
+
+<b>3. Known issue</b>
+
+To allow any binary linked to this Vicon SDK to find Vicon Datastream SDK library,
+you need also to set the following environment vars:
+\verbatim
+$ export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$VISP_DIR/3rdparty/vicon/Mac64
+$ export LC_LOAD_DYLIB=$LC_LOAD_DYLIB:$VISP_DIR/3rdparty/vicon/Mac64
+\endverbatim
+
+The first line contains the path to the `libViconDataStreamSDK_CPP.dylib` library and help ViSP to detect the SDK at runtime.
+The second line is here to help loading boost libraries that are in the same folder.
+
+Without setting these env vars you will get similar errors:
+\verbatim
+$ ./testMocapVicon -h
+dyld[34474]: Library not loaded: @executable_path/libViconDataStreamSDK_CPP.dylib
+  Referenced from: $VISP_DIR/visp-build/modules/sensor/testMocapVicon
+\endverbatim
+
+If you encounter the following error, it means that you have to install Python 2 required by Vicon Datastream SDK:
+\verbatim
+$ ./testMocapVicon -h
+dyld[33644]: Library not loaded: /System/Library/Frameworks/Python.framework/Versions/2.7/Python
+  Referenced from: /Users/fspindle/soft/third-party/vicon/Mac64/libViconDataStreamSDK_CPP.dylib
+\endverbatim
+To overcome this error, download and install the latest Python 2
+for macOS from [offical site](https://www.python.org/downloads/macos/).
 
 \subsection install_brew_get_source Get ViSP source code
 
@@ -231,7 +323,9 @@ The generated documentation is then available in `$VISP_WS/visp-build/doc/html/i
 - To speed up generating online doc, particularly around formula rendering, you can use [MatJax](https://www.mathjax.org). To this end, install MathJax and build doc using:
 \verbatim
 $ brew install node
+$ mkdir ~/node; cd ~/node
 $ npm install mathjax
+$ cd $VISP_WS/visp-build
 $ cmake ../visp -DUSE_MATHJAX=ON
 $ make -j$(sysctl -n hw.logicalcpu) visp_doc
 \endverbatim
@@ -583,19 +677,51 @@ General configuration information for ViSP 3.4.1
 
 \subsection install_brew_issues_pcl_1_12_1 Unable to build with pcl 1.12.1
 
-The following issue is reproductible installing pcl with Homebrew that brings pcl 1.12.1 on macOS Big Sur 11.6.2:
+The following issue is reproductible installing pcl with Homebrew that brings pcl 1.12.1 on macOS Big Sur 11.6.2 till macOS Monterey 12.6:
+\verbatim
+$ brew install librealsense pcl pkg-config
+$ cd $VISP_WS/visp-build
+$ cmake ../visp
+$ make -j$(sysctl -n hw.logicalcpu)
+$ make visp_sensor
+In file included from $VISP_WS/visp/modules/sensor/src/rgb-depth/realsense/vpRealSense2.cpp:44:
+$VISP_WS/visp/modules/sensor/include/visp3/sensor/vpRealSense2.h:47:10: fatal error: 'pcl/common/common_headers.h' file not found
+#include <pcl/common/common_headers.h>
+         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+\endverbatim
+
+In fact `pcl 1.12.1` has a dependency to `VTK` that depends on `qt5` that is keg-only. In other terms, it means that if `qt5` is not detected,
+`VTK` will not be detected too leading to a uncomplete `pcl` detection. As a consequence, ViSP will be able to detect `pcl` but not `VTK` leading
+to the previous build issue.
+
+This could also be checked in `ViSP-third-party.txt` file, that contains:
 ```
-$ brew install pcl
+$ cat ViSP-third-party.txt
+    Use PCL:                     yes (ver 1.12.1)
+    \- Use VTK:                  no
 ```
 
-`pcl 1.12.1` has a dependency to `qt5` that is keg-only, which means it was not symlinked into `/usr/local`. As a consequence, ViSP will be not able to detect `pcl` leading to a build issue. The solution to build ViSP with `pcl 1.12.1` is here to run the additional commands:
+The solution to build ViSP with `pcl 1.12.1` is to set `Qt5_DIR` cmake or environment var with the path where `Qt5Config.cmake` or `qt5-config.cmake` is located.
+In our case, `Qt5_DIR` should be set to `$(brew --prefix qt5)/lib/cmake/Qt5`.
 ```
-$ brew link --force qt5
-$ sudo ln -s $(brew --prefix qt5)/mkspecs /usr/local/mkspecs
-$ sudo ln -s $(brew --prefix qt5)/plugins /usr/local/plugins
+$ ls $(brew --prefix qt5)/lib/cmake/Qt5
+Qt5Config.cmake		Qt5ConfigVersion.cmake	Qt5ModuleLocation.cmake
 ```
 
-and then do a ViSP fresh build.
+There are now two options:
+1. Passing `Qt5_DIR` as a cmake var during ViSP configuration:
+```
+$ cmake ../visp -DQt5_DIR=$(brew --prefix qt5)/lib/cmake/Qt5
+$ make -j$(sysctl -n hw.logicalcpu)
+```
+2. Setting `Qt5_DIR` as an environment var:
+```
+$ export Qt5_DIR=$(brew --prefix qt5)/lib/cmake/Qt5
+$ cmake ../visp
+$ make -j$(sysctl -n hw.logicalcpu)
+```
+Note that this environment var could be added permanently in your `~/.bashrc` file.
 
 \subsection install_brew_issues_pcl CMake Error in /usr/local/share/pcl-1.9/PCLConfig.cmake
 
@@ -642,7 +768,7 @@ You can try again using:
 ...
 \endverbatim
 it means maybe that you install other softwares without brew in /usr/local.
-A work arround is to change the owner of the corresponding folder like:
+A work around is to change the owner of the corresponding folder like:
 \verbatim
 $ sudo chown <your-user-name> /usr/local/lib/pkgconfig
 \endverbatim
@@ -661,12 +787,12 @@ error: can't create a png read structure!
 error reading png file
 \endverbatim
 It means that apparently there is a conflict between libpng version installed by `brew install opencv3` (1.6.17), and the one used by `X11/XQuartz` (1.5.18).
-A work arround is to turn off libpng usage in ViSP. To configure and build again ViSP without png support:
+A work around is to turn off libpng usage in ViSP. To configure and build again ViSP without png support:
 \verbatim
 $ ccmake -DUSE_PNG=OFF ../ViSP
 $ make -j$(sysctl -n hw.logicalcpu)
 \endverbatim
-An other work arround option is to turn off X11 usage in ViSP. Display capabilities will be then the one from OpenCV. To this end, configure and build again ViSP without X11 support:
+An other work around option is to turn off X11 usage in ViSP. Display capabilities will be then the one from OpenCV. To this end, configure and build again ViSP without X11 support:
 \verbatim
 $ ccmake -DUSE_X11=OFF ../ViSP
 $ make -j$(sysctl -n hw.logicalcpu)

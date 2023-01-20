@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,10 +31,6 @@
  * Description:
  * Wrapper for the KLT (Kanade-Lucas-Tomasi) feature tracker implemented
  * with opencv.
- *
- * Authors:
- * Fabien Servant
- * Fabien Spindler
  *
  *****************************************************************************/
 
@@ -1274,10 +1270,10 @@ void vpKltOpencv::display(const vpImage<unsigned char> &I, const CvPoint2D32f *f
     ip.set_v(vpMath::round(features_list[i].y));
     vpDisplay::displayCross(I, ip, 10 + thickness, color, thickness);
 
-    char id[10];
-    sprintf(id, "%ld", featuresid_list[i]);
+    std::stringstream id;
+    id << featuresid_list[i];
     ip.set_u(vpMath::round(features_list[i].x + 5));
-    vpDisplay::displayText(I, ip, id, color);
+    vpDisplay::displayText(I, ip, id.str(), color);
   }
 }
 
@@ -1306,15 +1302,15 @@ void vpKltOpencv::display(const vpImage<vpRGBa> &I, const CvPoint2D32f *features
     ip.set_v(vpMath::round(features_list[i].y));
     vpDisplay::displayCross(I, ip, 10, color, thickness);
 
-    char id[10];
-    sprintf(id, "%ld", featuresid_list[i]);
+    std::stringstream id;
+    id << featuresid_list[i];
     ip.set_u(vpMath::round(features_list[i].x + 5));
-    vpDisplay::displayText(I, ip, id, color);
+    vpDisplay::displayText(I, ip, id.str(), color);
   }
 }
 #else
 
-// Work arround to avoid visp_klt library empty when OpenCV is not installed
+// Work around to avoid visp_klt library empty when OpenCV is not installed
 // or used
 class VISP_EXPORT dummy_vpKltOpencv
 {
@@ -1323,7 +1319,7 @@ public:
 };
 
 #if !defined(VISP_BUILD_SHARED_LIBS)
-// Work arround to avoid warning: libvisp_klt.a(vpKltOpenCV.cpp.o) has no
+// Work around to avoid warning: libvisp_klt.a(vpKltOpenCV.cpp.o) has no
 // symbols
 void dummy_vpKltOpenCV_fct(){};
 #endif
